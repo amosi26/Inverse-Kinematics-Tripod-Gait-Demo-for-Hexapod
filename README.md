@@ -26,8 +26,10 @@ This project demonstrates a proof of concept for solving the inverse kinematics 
 - **Experimental:** This code is for experimentation and may be scrapped or heavily modified as the project progresses.
 
 ## Files
-- `inverse_kinematics.py`: Core kinematics and IK solver.
-- `swing_position.py`: Example trajectory planning and IK solving for a leg swing/stance cycle.
+- `kinematics/inverse_kinematics.py`: Core kinematics and IK solver.
+- `kinematics/swing_position.py`: Example trajectory planning and IK solving for a leg swing/stance cycle.
+- `kinematics/tripod_gait.py`: Tripod gait planner/solver using swing trajectory + IK.
+- `animations/`: Demo animation scripts.
 
 ---
 

@@ -1,19 +1,39 @@
 import numpy as np
 
-from inverse_kinematics import (
-    START_T1_DEG,
-    START_T2_DEG,
-    START_T3_DEG,
-    fk_and_jacobian,
-    fk_joint_positions,
-    solve_ik_to_target,
-)
+try:
+    from .inverse_kinematics import (
+        START_T1_DEG,
+        START_T2_DEG,
+        START_T3_DEG,
+        fk_and_jacobian,
+        fk_joint_positions,
+        solve_ik_to_target,
+    )
+except ImportError:
+    try:
+        from kinematics.inverse_kinematics import (
+            START_T1_DEG,
+            START_T2_DEG,
+            START_T3_DEG,
+            fk_and_jacobian,
+            fk_joint_positions,
+            solve_ik_to_target,
+        )
+    except ImportError:
+        from inverse_kinematics import (
+            START_T1_DEG,
+            START_T2_DEG,
+            START_T3_DEG,
+            fk_and_jacobian,
+            fk_joint_positions,
+            solve_ik_to_target,
+        )
 
 
 def foot_trajectory(
     start_foot_pos,
-    step_length=1.0,
-    step_height=0.45,
+    step_length=3.0,
+    step_height=1.0,
     stance_targets=16,
     swing_targets=20,
     lateral_shift=0.0,
@@ -167,6 +187,13 @@ def solve_trajectory_targets(
             all_target_frames.append(target)
             all_target_index_frames.append(target_idx)
 
+    converged_flags = [stat[0] for stat in solve_stats]
+    all_converged = all(converged_flags)
+    failed_target_indices = [idx for idx, ok in enumerate(converged_flags) if not ok]
+    print(f"All targets converged: {all_converged}")
+    if not all_converged:
+        print(f"Non-converged target indices: {failed_target_indices}")
+
     return {
         "targets": np.array(targets),
         "phase_ids": np.array(phase_ids),
@@ -178,3 +205,11 @@ def solve_trajectory_targets(
         "start_angles": start_angles,
         "final_angles": (t1, t2, t3),
     }
+
+
+if __name__ == "__main__":
+    print("Running swing_position.solve_trajectory_targets()...")
+    solve_trajectory_targets(
+        verbose=True,
+        pause_frames=0,
+    )

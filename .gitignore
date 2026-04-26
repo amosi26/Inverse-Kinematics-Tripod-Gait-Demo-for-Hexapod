@@ -1,5 +1,24 @@
 __pycache__/
-*.pyc
+*.py[cod]
 
-# Keep animation/demo scripts local-only
-*_animation.py
+# Virtual envs
+.venv/
+venv/
+env/
+
+# Local env/config
+.env
+.env.*
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+
+# Tool caches
+.pytest_cache/
+.mypy_cache/
+.coverage
+
+# Local Codex marker
+.codex
