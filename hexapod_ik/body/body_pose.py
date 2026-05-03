@@ -8,7 +8,11 @@ Planned scope:
 
 import numpy as np
 
-from hexapod_ik.config.robot_config import LEG_MOUNT_POSITIONS_BODY, LEG_MOUNT_YAWS_DEG_BODY
+from hexapod_ik.config.robot_config import (
+    LEG_MOUNT_POSITIONS_BODY,
+    LEG_MOUNT_YAWS_DEG_BODY,
+    NEUTRAL_FOOT_LEG_LOCAL,
+)
 
 
 def rotation_x(theta_rad):
@@ -104,3 +108,20 @@ def foot_world_to_leg_local(
         yaw_rad=yaw_rad,
     )
     return foot_body_to_leg_local(leg_name, foot_body)
+
+
+def neutral_foot_positions_body():
+    """
+    Build neutral stance footprint in body frame for all six legs.
+
+    This applies one shared leg-local neutral target to each leg and maps it
+    into body coordinates using fixed body geometry and leg mount yaw angles.
+    """
+    neutral_leg_local = np.array(NEUTRAL_FOOT_LEG_LOCAL, dtype=float)
+    footprint = {}
+    for leg_name, mount_position in LEG_MOUNT_POSITIONS_BODY.items():
+        mount_position = np.array(mount_position, dtype=float)
+        yaw_rad = np.deg2rad(LEG_MOUNT_YAWS_DEG_BODY[leg_name])
+        foot_body = mount_position + rotation_z(yaw_rad) @ neutral_leg_local
+        footprint[leg_name] = foot_body
+    return footprint

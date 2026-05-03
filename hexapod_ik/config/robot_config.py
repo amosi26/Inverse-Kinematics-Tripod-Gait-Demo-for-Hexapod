@@ -60,3 +60,10 @@ LEG_MOUNT_YAWS_DEG_BODY = {
     "RB": -68.2,
     "LB": -111.8,
 }
+
+# Default neutral foot target in each leg's local frame.
+# +X_leg points outward from the body along the leg mount yaw direction.
+# Z is negative because the foot sits below the body.
+# This value was chosen because the leg-local IK sweep showed it converges.
+# This is a prototype stance and should be validated against CAD/hardware clearance.
+NEUTRAL_FOOT_LEG_LOCAL = (6.0, 0.0, -4.0)
