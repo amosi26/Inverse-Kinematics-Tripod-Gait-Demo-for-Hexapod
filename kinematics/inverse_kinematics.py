@@ -4,6 +4,11 @@ import numpy as np
 START_T1_DEG = 0.0
 START_T2_DEG = 45.0
 START_T3_DEG = -120.0
+MAX_JOINT_SPEED_DEG_PER_SEC = 90.0
+CONTROL_DT_SEC = 0.05
+L1X = 2.14246204
+L2X = 3.01904217
+L3X = 3.23556539
 
 
 def wrap_angle_deg(angle_deg):
@@ -11,11 +16,68 @@ def wrap_angle_deg(angle_deg):
     return ((angle_deg + 180.0) % 360.0) - 180.0
 
 
+def clamp_joint_angles(t1, t2, t3):
+    """
+    Clamp each joint angle to the physical 180-degree servo range.
+
+    This is different from wrapping. A real servo cannot rotate past its
+    mechanical limits and reappear on the other side of the angle range.
+    """
+    t1_clamped = np.clip(t1, 0.0, 180.0)  # coxa
+    t2_clamped = np.clip(t2, 0.0, 180.0)  # femur
+    t3_clamped = np.clip(t3, 0.0, 180.0)  # tibia
+    return t1_clamped, t2_clamped, t3_clamped
+
+
+def limit_joint_step(q_current, q_target):
+    """
+    Limit how much each joint angle can change during one IK update.
+
+    The servo datasheet gives an ideal unloaded speed of roughly
+    300-375 deg/s, but the real robot uses cheap servos under load.
+    This conservative limiter prevents the solver from commanding
+    angle jumps the servos cannot realistically follow.
+    """
+    q_current = np.array(q_current, dtype=float)
+    q_target = np.array(q_target, dtype=float)
+
+    max_step_deg = MAX_JOINT_SPEED_DEG_PER_SEC * CONTROL_DT_SEC
+
+    step = q_target - q_current
+    step_limited = np.clip(step, -max_step_deg, max_step_deg)
+
+    return q_current + step_limited
+
+
+def is_target_reachable(target):
+    """
+    Check if the target is reachable using a simple coxa + femur/tibia workspace test.
+
+    This prevents the IK solver from chasing impossible foot targets that would
+    force repeated joint clamping or unstable motion.
+    """
+    target = np.array(target, dtype=float)
+    x, y, z = target
+
+    coxa_len = L1X
+    femur_len = L2X
+    tibia_len = L3X
+
+    horizontal_dist = np.sqrt(x**2 + y**2)
+
+    leg_plane_dist = np.sqrt((horizontal_dist - coxa_len)**2 + z**2)
+
+    max_reach = femur_len + tibia_len
+    min_reach = abs(femur_len - tibia_len)
+
+    return min_reach <= leg_plane_dist <= max_reach
+
+
 def fk_and_jacobian(t1, t2, t3):
     # Denavite-Hartenberg parameters for the 3-DOF robotic arm
-    l1x = 2.14246204
-    l2x = 3.01904217
-    l3x = 3.23556539
+    l1x = L1X
+    l2x = L2X
+    l3x = L3X
 
     l1z = 0.0
     l2z = 0.0
@@ -103,9 +165,9 @@ def fk_and_jacobian(t1, t2, t3):
 
 def fk_joint_positions(t1, t2, t3):
     # Returns joint origin points [p0, p1, p2, p3] for plotting.
-    l1x = 2.14246204
-    l2x = 3.01904217
-    l3x = 3.23556539
+    l1x = L1X
+    l2x = L2X
+    l3x = L3X
 
     l1z = 0.0
     l2z = 0.0
@@ -189,6 +251,12 @@ def solve_ik_to_target(start_angles, target, alpha=0.01, tol=0.1, max_iters=1000
     converged = False
     k = 0
 
+    if not is_target_reachable(target):
+        print("Warning: IK target is outside rough reachable workspace; returning initial joint angles.")
+        final_angles = (t1, t2, t3)
+        final_error_norm = np.linalg.norm(target - current)
+        return final_angles, angle_history, ee_history, converged, 0, final_error_norm
+
     for k in range(max_iters):
         current, Jacobian = fk_and_jacobian(t1, t2, t3)
         error = target - current
@@ -211,14 +279,21 @@ def solve_ik_to_target(start_angles, target, alpha=0.01, tol=0.1, max_iters=1000
 
         dq = Jv_pinv @ (alpha * error)
 
-        t1 += np.rad2deg(dq[0])
-        t2 += np.rad2deg(dq[1])
-        t3 += np.rad2deg(dq[2])
+        q_current = np.array([t1, t2, t3], dtype=float)
+        q_target = q_current + np.rad2deg(dq)
 
-        # Keep external joint-angle state in [-180, 180]
-        t1 = wrap_angle_deg(t1)
-        t2 = wrap_angle_deg(t2)
-        t3 = wrap_angle_deg(t3)
+        # Clamp to physical servo limits (0 to 180 deg), do not wrap.
+        q_target = np.array(clamp_joint_angles(*q_target), dtype=float)
+
+        if not np.allclose(q_current + np.rad2deg(dq), q_target):
+            print("Warning: IK tried to exceed servo limits; clamping joint angles.")
+
+        q_limited = limit_joint_step(q_current, q_target)
+
+        if not np.allclose(q_target, q_limited):
+            print("Warning: IK joint update exceeded max step; limiting angle change.")
+
+        t1, t2, t3 = q_limited
 
         angle_history.append((t1, t2, t3))
         current, _ = fk_and_jacobian(t1, t2, t3)
