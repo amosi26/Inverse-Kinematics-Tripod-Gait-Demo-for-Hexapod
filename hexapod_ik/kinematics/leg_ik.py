@@ -1,14 +1,21 @@
 import numpy as np
 
-# Shared default starting pose (degrees). Update these to change all demos that import them.
-START_T1_DEG = 0.0
-START_T2_DEG = 45.0
-START_T3_DEG = -120.0
-MAX_JOINT_SPEED_DEG_PER_SEC = 90.0
-CONTROL_DT_SEC = 0.05
-L1X = 2.14246204
-L2X = 3.01904217
-L3X = 3.23556539
+from hexapod_ik.config.robot_config import (
+    CONTROL_DT_SEC,
+    COXA_MAX_DEG,
+    COXA_MIN_DEG,
+    FEMUR_MAX_DEG,
+    FEMUR_MIN_DEG,
+    L1X,
+    L2X,
+    L3X,
+    MAX_JOINT_SPEED_DEG_PER_SEC,
+    START_T1_DEG,
+    START_T2_DEG,
+    START_T3_DEG,
+    TIBIA_MAX_DEG,
+    TIBIA_MIN_DEG,
+)
 
 
 def wrap_angle_deg(angle_deg):
@@ -23,9 +30,9 @@ def clamp_joint_angles(t1, t2, t3):
     This is different from wrapping. A real servo cannot rotate past its
     mechanical limits and reappear on the other side of the angle range.
     """
-    t1_clamped = np.clip(t1, 0.0, 180.0)  # coxa
-    t2_clamped = np.clip(t2, 0.0, 180.0)  # femur
-    t3_clamped = np.clip(t3, 0.0, 180.0)  # tibia
+    t1_clamped = np.clip(t1, COXA_MIN_DEG, COXA_MAX_DEG)  # coxa
+    t2_clamped = np.clip(t2, FEMUR_MIN_DEG, FEMUR_MAX_DEG)  # femur
+    t3_clamped = np.clip(t3, TIBIA_MIN_DEG, TIBIA_MAX_DEG)  # tibia
     return t1_clamped, t2_clamped, t3_clamped
 
 

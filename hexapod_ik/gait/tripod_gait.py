@@ -2,37 +2,15 @@
 
 import numpy as np
 
-try:
-    from .inverse_kinematics import (
-        START_T1_DEG,
-        START_T2_DEG,
-        START_T3_DEG,
-        fk_and_jacobian,
-        fk_joint_positions,
-        solve_ik_to_target,
-    )
-    from .swing_position import foot_trajectory
-except ImportError:
-    try:
-        from kinematics.inverse_kinematics import (
-            START_T1_DEG,
-            START_T2_DEG,
-            START_T3_DEG,
-            fk_and_jacobian,
-            fk_joint_positions,
-            solve_ik_to_target,
-        )
-        from kinematics.swing_position import foot_trajectory
-    except ImportError:
-        from inverse_kinematics import (
-            START_T1_DEG,
-            START_T2_DEG,
-            START_T3_DEG,
-            fk_and_jacobian,
-            fk_joint_positions,
-            solve_ik_to_target,
-        )
-        from swing_position import foot_trajectory
+from hexapod_ik.gait.swing_stance import foot_trajectory
+from hexapod_ik.kinematics.leg_ik import (
+    START_T1_DEG,
+    START_T2_DEG,
+    START_T3_DEG,
+    fk_and_jacobian,
+    fk_joint_positions,
+    solve_ik_to_target,
+)
 
 
 LEG_ORDER = (

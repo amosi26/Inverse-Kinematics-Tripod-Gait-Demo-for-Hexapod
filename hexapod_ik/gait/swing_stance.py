@@ -1,33 +1,13 @@
 import numpy as np
 
-try:
-    from .inverse_kinematics import (
-        START_T1_DEG,
-        START_T2_DEG,
-        START_T3_DEG,
-        fk_and_jacobian,
-        fk_joint_positions,
-        solve_ik_to_target,
-    )
-except ImportError:
-    try:
-        from kinematics.inverse_kinematics import (
-            START_T1_DEG,
-            START_T2_DEG,
-            START_T3_DEG,
-            fk_and_jacobian,
-            fk_joint_positions,
-            solve_ik_to_target,
-        )
-    except ImportError:
-        from inverse_kinematics import (
-            START_T1_DEG,
-            START_T2_DEG,
-            START_T3_DEG,
-            fk_and_jacobian,
-            fk_joint_positions,
-            solve_ik_to_target,
-        )
+from hexapod_ik.kinematics.leg_ik import (
+    START_T1_DEG,
+    START_T2_DEG,
+    START_T3_DEG,
+    fk_and_jacobian,
+    fk_joint_positions,
+    solve_ik_to_target,
+)
 
 
 def foot_trajectory(
@@ -208,7 +188,7 @@ def solve_trajectory_targets(
 
 
 if __name__ == "__main__":
-    print("Running swing_position.solve_trajectory_targets()...")
+    print("Running swing_stance.solve_trajectory_targets()...")
     solve_trajectory_targets(
         verbose=True,
         pause_frames=0,

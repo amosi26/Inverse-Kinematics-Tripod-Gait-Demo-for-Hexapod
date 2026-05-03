@@ -1,37 +1,84 @@
-# Hexapod Leg Inverse Kinematics Proof of Concept
+# Hexapod IK
 
-This project demonstrates a proof of concept for solving the inverse kinematics (IK) of a single hexapod leg using the Jacobian pseudoinverse method. The code models a 3-DOF (degrees of freedom) robotic leg, with kinematic parameters derived from the CAD model of the hexapod and later optimized for a simpler Denavit-Hartenberg (DH) table.
+This repository is currently focused on constrained single-leg inverse kinematics (IK) for a hexapod leg.
 
-## Project Purpose
-- **Goal:** Provide a working example of iterative inverse kinematics for a hexapod leg, using the Jacobian pseudoinverse (with optional damping for stability).
-- **Scope:** This is a prototype for algorithm development and testing. The code is not final and will be updated or replaced as the project evolves.
+The current solver keeps practical safety constraints in the loop:
+- joint angle clamping to physical servo limits
+- per-iteration joint-rate limiting
+- rough reachability checks before iteration
 
-## Mathematical Background
-- **Forward Kinematics:** Uses DH parameters to compute the end-effector (foot) position from joint angles.
-- **Jacobian Matrix:** The Jacobian relates joint velocities to end-effector velocities. For a 3-DOF leg, a 6x3 Jacobian is computed, but only the linear (top 3 rows) part is used for position IK.
-- **Pseudoinverse IK:** The solver iteratively updates joint angles to minimize the error between the current and target foot position. The update step uses the (damped) pseudoinverse of the Jacobian:
-  
-  $$
-  \Delta \theta = J_v^+ (\alpha (x_{target} - x_{current}))
-  $$
-  where $J_v^+$ is the (damped) pseudoinverse of the linear Jacobian, $\alpha$ is a step size, and $x$ are positions.
-- **Damping:** Damping (Levenberg-Marquardt style) is used to improve stability near singularities.
+Animations are temporarily deprioritized/removed while development focuses on kinematics reliability and body pose groundwork.
 
-## Kinematic Parameters
-- **Measurements:** Link lengths and offsets were initially measured from the hexapod's CAD model. These were later adjusted to simplify the DH table and make the math more tractable for rapid prototyping.
+## Current Focus
+- Reliable constrained leg IK behavior
+- Clean package structure for upcoming body pose math
 
-## Project Status & Future Work
-- **Constraints:** The current solver does not enforce joint or workspace constraints. These will be added in future iterations.
-- **CAD Updates:** When the final CAD is complete and the preferred IK method is established, this code will be updated or replaced to match the new design.
-- **Experimental:** This code is for experimentation and may be scrapped or heavily modified as the project progresses.
+## Next Planned Work
+- Body pose IK using body translation and roll/pitch/yaw transforms
+- Converting body/world foot targets into leg-local targets before leg IK
 
-## Files
-- `kinematics/inverse_kinematics.py`: Core kinematics and IK solver.
-- `kinematics/swing_position.py`: Example trajectory planning and IK solving for a leg swing/stance cycle.
-- `kinematics/tripod_gait.py`: Tripod gait planner/solver using swing trajectory + IK.
-- `animations/`: Demo animation scripts.
+Tripod gait planning exists in the repo, but it is not the immediate next focus.
 
----
+## Project Layout
 
-**Author:** Andrei Mosincat
-**Branch:** Feature/IK-leg (HexapodProject)
+```text
+hexapod_ik/
+    __init__.py
+
+    config/
+        __init__.py
+        robot_config.py
+
+    kinematics/
+        __init__.py
+        leg_ik.py
+        transforms.py
+
+    gait/
+        __init__.py
+        swing_stance.py
+        tripod_gait.py
+
+    body/
+        __init__.py
+        body_pose.py
+
+demos/
+    __init__.py
+    run_leg_ik_demo.py
+    run_tripod_demo.py
+
+tests/
+    __init__.py
+    test_leg_ik.py
+
+README.md
+.gitignore
+requirements.txt
+```
+
+## Quick Start
+
+Install dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+Run leg IK demo:
+
+```bash
+python -m demos.run_leg_ik_demo
+```
+
+Run tripod console demo:
+
+```bash
+python -m demos.run_tripod_demo
+```
+
+Run tests:
+
+```bash
+python -m unittest -v tests.test_leg_ik
+```
