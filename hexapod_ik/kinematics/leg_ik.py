@@ -2,10 +2,7 @@ import numpy as np
 
 from hexapod_ik.config.robot_config import (
     CONTROL_DT_SEC,
-    COXA_MAX_DEG,
-    COXA_MIN_DEG,
-    FEMUR_MAX_DEG,
-    FEMUR_MIN_DEG,
+    IK_JOINT_LIMITS_DEG,
     L1X,
     L2X,
     L3X,
@@ -13,8 +10,6 @@ from hexapod_ik.config.robot_config import (
     START_T1_DEG,
     START_T2_DEG,
     START_T3_DEG,
-    TIBIA_MAX_DEG,
-    TIBIA_MIN_DEG,
 )
 
 
@@ -25,14 +20,17 @@ def wrap_angle_deg(angle_deg):
 
 def clamp_joint_angles(t1, t2, t3):
     """
-    Clamp each joint angle to the physical 180-degree servo range.
+    Clamp each joint angle to internal IK math-angle limits.
 
     This is different from wrapping. A real servo cannot rotate past its
     mechanical limits and reappear on the other side of the angle range.
     """
-    t1_clamped = np.clip(t1, COXA_MIN_DEG, COXA_MAX_DEG)  # coxa
-    t2_clamped = np.clip(t2, FEMUR_MIN_DEG, FEMUR_MAX_DEG)  # femur
-    t3_clamped = np.clip(t3, TIBIA_MIN_DEG, TIBIA_MAX_DEG)  # tibia
+    coxa_min, coxa_max = IK_JOINT_LIMITS_DEG["coxa"]
+    femur_min, femur_max = IK_JOINT_LIMITS_DEG["femur"]
+    tibia_min, tibia_max = IK_JOINT_LIMITS_DEG["tibia"]
+    t1_clamped = np.clip(t1, coxa_min, coxa_max)  # coxa
+    t2_clamped = np.clip(t2, femur_min, femur_max)  # femur
+    t3_clamped = np.clip(t3, tibia_min, tibia_max)  # tibia
     return t1_clamped, t2_clamped, t3_clamped
 
 
@@ -293,7 +291,7 @@ def solve_ik_to_target(start_angles, target, alpha=0.01, tol=0.1, max_iters=1000
         q_target = np.array(clamp_joint_angles(*q_target), dtype=float)
 
         if not np.allclose(q_current + np.rad2deg(dq), q_target):
-            print("Warning: IK tried to exceed servo limits; clamping joint angles.")
+            print("Warning: IK tried to exceed IK math-angle limits; clamping joint angles.")
 
         q_limited = limit_joint_step(q_current, q_target)
 

@@ -4,20 +4,15 @@ import numpy as np
 
 from hexapod_ik.config.robot_config import (
     CONTROL_DT_SEC,
-    COXA_MAX_DEG,
-    COXA_MIN_DEG,
-    FEMUR_MAX_DEG,
-    FEMUR_MIN_DEG,
+    IK_JOINT_LIMITS_DEG,
     MAX_JOINT_SPEED_DEG_PER_SEC,
-    TIBIA_MAX_DEG,
-    TIBIA_MIN_DEG,
 )
 from hexapod_ik.kinematics.leg_ik import fk_and_jacobian, solve_ik_to_target
 
 
 class TestLegIKSafety(unittest.TestCase):
     def test_ik_output_within_joint_limits(self):
-        start_angles = (0.0, 45.0, 120.0)
+        start_angles = (0.0, 45.0, 0.0)
         target, _ = fk_and_jacobian(90.0, 80.0, 100.0)
 
         final_angles, angle_history, *_rest = solve_ik_to_target(
@@ -30,22 +25,25 @@ class TestLegIKSafety(unittest.TestCase):
         )
 
         all_angles = np.array(angle_history, dtype=float)
-        self.assertTrue(np.all(all_angles[:, 0] >= COXA_MIN_DEG))
-        self.assertTrue(np.all(all_angles[:, 0] <= COXA_MAX_DEG))
-        self.assertTrue(np.all(all_angles[:, 1] >= FEMUR_MIN_DEG))
-        self.assertTrue(np.all(all_angles[:, 1] <= FEMUR_MAX_DEG))
-        self.assertTrue(np.all(all_angles[:, 2] >= TIBIA_MIN_DEG))
-        self.assertTrue(np.all(all_angles[:, 2] <= TIBIA_MAX_DEG))
+        coxa_min, coxa_max = IK_JOINT_LIMITS_DEG["coxa"]
+        femur_min, femur_max = IK_JOINT_LIMITS_DEG["femur"]
+        tibia_min, tibia_max = IK_JOINT_LIMITS_DEG["tibia"]
+        self.assertTrue(np.all(all_angles[:, 0] >= coxa_min))
+        self.assertTrue(np.all(all_angles[:, 0] <= coxa_max))
+        self.assertTrue(np.all(all_angles[:, 1] >= femur_min))
+        self.assertTrue(np.all(all_angles[:, 1] <= femur_max))
+        self.assertTrue(np.all(all_angles[:, 2] >= tibia_min))
+        self.assertTrue(np.all(all_angles[:, 2] <= tibia_max))
 
-        self.assertGreaterEqual(final_angles[0], COXA_MIN_DEG)
-        self.assertLessEqual(final_angles[0], COXA_MAX_DEG)
-        self.assertGreaterEqual(final_angles[1], FEMUR_MIN_DEG)
-        self.assertLessEqual(final_angles[1], FEMUR_MAX_DEG)
-        self.assertGreaterEqual(final_angles[2], TIBIA_MIN_DEG)
-        self.assertLessEqual(final_angles[2], TIBIA_MAX_DEG)
+        self.assertGreaterEqual(final_angles[0], coxa_min)
+        self.assertLessEqual(final_angles[0], coxa_max)
+        self.assertGreaterEqual(final_angles[1], femur_min)
+        self.assertLessEqual(final_angles[1], femur_max)
+        self.assertGreaterEqual(final_angles[2], tibia_min)
+        self.assertLessEqual(final_angles[2], tibia_max)
 
     def test_ik_step_limited_per_iteration(self):
-        start_angles = (0.0, 45.0, 120.0)
+        start_angles = (0.0, 45.0, 0.0)
         target, _ = fk_and_jacobian(150.0, 150.0, 150.0)
 
         _final_angles, angle_history, *_rest = solve_ik_to_target(
@@ -64,7 +62,7 @@ class TestLegIKSafety(unittest.TestCase):
             self.assertLessEqual(float(np.max(step_deltas)), max_step + 1e-9)
 
     def test_unreachable_target_returns_initial_angles(self):
-        start_angles = (0.0, 45.0, 120.0)
+        start_angles = (0.0, 45.0, 0.0)
         unreachable_target = np.array([20.0, 0.0, 0.0], dtype=float)
 
         final_angles, angle_history, ee_history, converged, iterations, _final_error = solve_ik_to_target(
