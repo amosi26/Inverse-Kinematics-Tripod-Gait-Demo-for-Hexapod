@@ -1,104 +1,95 @@
 # Hexapod IK
 
-This repository is currently focused on constrained single-leg inverse kinematics (IK) for a hexapod leg.
+This repository currently provides a constrained inverse-kinematics foundation for a hexapod, including a reusable body-pose IK layer for all six legs.
 
-The current solver keeps practical safety constraints in the loop:
-- internal IK math-angle clamping with `IK_JOINT_LIMITS_DEG = [-90, 90]` per joint
-- separate `SERVO_COMMAND_LIMITS_DEG = [0, 180]` config for future hardware mapping (not used by IK yet)
-- per-iteration joint-rate limiting
-- rough reachability checks before iteration
+## Project Status
+- Constrained single-leg IK is implemented and tested.
+- Body pose transform layer is implemented (world/body/leg-local).
+- Neutral stance footprint is implemented and validated.
+- Reusable all-six-leg body pose IK API exists: `solve_body_pose_ik()`.
+- Tripod gait integration with body pose IK is planned next.
+- Animations are currently removed/deprioritized.
 
-Animations are temporarily deprioritized/removed while development focuses on kinematics reliability and body pose groundwork.
-
-## Current Focus
-- Reliable constrained leg IK behavior
-- Clean package structure for upcoming body pose math
-
-## Next Planned Work
-- Body pose IK using body translation and roll/pitch/yaw transforms
-- Converting body/world foot targets into leg-local targets before leg IK
-
-Tripod gait planning exists in the repo, but it is not the immediate next focus.
-
-## Body Pose Status
-- Body pose transform utilities exist:
-  - world -> body
-  - body -> leg-local
-  - world -> leg-local wrapper
-- Transform demos/checks currently pass.
-
-## Project Layout
+## Current Architecture
 
 ```text
 hexapod_ik/
-    __init__.py
-
     config/
-        __init__.py
         robot_config.py
-
     kinematics/
-        __init__.py
         leg_ik.py
         transforms.py
-
+    body/
+        body_pose.py
+        body_pose_ik.py
     gait/
-        __init__.py
         swing_stance.py
         tripod_gait.py
 
-    body/
-        __init__.py
-        body_pose.py
-
 demos/
-    __init__.py
-    check_body_pose_transform.py
-    check_world_to_body_transform.py
-    check_world_to_leg_transform.py
+    run_body_pose_ik_demo.py
+    check_all_legs_body_pose_ik.py
+    check_all_legs_neutral_ik.py
+    check_neutral_stance_footprint.py
+    find_body_pose_limits.py
+    check_body_pose_transform.py          # low-level diagnostic
+    check_world_to_body_transform.py      # low-level diagnostic
+    check_world_to_leg_transform.py       # low-level diagnostic
     run_leg_ik_demo.py
-    run_one_leg_body_pose_ik_demo.py
     run_tripod_demo.py
-    sweep_leg_local_ik_targets.py
 
 tests/
-    __init__.py
-    test_body_pose.py
     test_leg_ik.py
-
-README.md
-.gitignore
-requirements.txt
+    test_body_pose.py
+    test_body_pose_ik.py
 ```
 
-## Current Known Issue
-- The body pose transform chain passes its checks.
-- The IK solver currently converges only for some leg-local targets.
-- The target `[3.0, 0.0, -4.0]` does not converge under current settings.
-- Next work is defining valid neutral foot/home positions based on the actual IK workspace.
+## Key Features
+- IK math limits are separate from future servo command limits.
+- Per-step joint rate limiter is enforced in IK updates.
+- Rough reachability check prevents impossible-target chasing.
+- Explicit body frame convention and leg mount geometry/yaw configuration.
+- Neutral stance footprint generation and round-trip validation.
+- Reusable all-six-leg body pose solver:
+  - `hexapod_ik.body.body_pose_ik.solve_body_pose_ik(...)`
+  - validates `BODY_POSE_LIMITS`
+  - returns `outside_body_pose_limits` or `ik_infeasible` when not accepted
 
-## Quick Start
+## Known Limitations
+- No hardware servo output mapping/control yet.
+- No tripod gait integration with `solve_body_pose_ik()` yet.
+- No CAD collision checking yet.
+- Conservative body pose limits are empirical software constraints.
+- Some combined poses can still be rejected as `ik_infeasible` even if inside `BODY_POSE_LIMITS`.
 
-Install dependencies:
+## Commands
+
+Install requirements:
 
 ```bash
 pip install -r requirements.txt
-```
-
-Run leg IK demo:
-
-```bash
-python -m demos.run_leg_ik_demo
-```
-
-Run tripod console demo:
-
-```bash
-python -m demos.run_tripod_demo
 ```
 
 Run tests:
 
 ```bash
 pytest
+```
+
+Run key demos:
+
+```bash
+python -m demos.run_body_pose_ik_demo
+python -m demos.check_all_legs_body_pose_ik
+python -m demos.check_all_legs_neutral_ik
+python -m demos.check_neutral_stance_footprint
+python -m demos.find_body_pose_limits
+```
+
+Low-level transform diagnostics:
+
+```bash
+python -m demos.check_body_pose_transform
+python -m demos.check_world_to_body_transform
+python -m demos.check_world_to_leg_transform
 ```

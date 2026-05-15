@@ -9,6 +9,7 @@ Planned scope:
 import numpy as np
 
 from hexapod_ik.config.robot_config import (
+    BODY_POSE_LIMITS,
     LEG_MOUNT_POSITIONS_BODY,
     LEG_MOUNT_YAWS_DEG_BODY,
     NEUTRAL_FOOT_LEG_LOCAL,
@@ -53,6 +54,35 @@ def body_rotation_matrix(roll_rad=0.0, pitch_rad=0.0, yaw_rad=0.0):
     Build body orientation matrix that maps body-frame vectors into world-frame vectors.
     """
     return rotation_z(yaw_rad) @ rotation_y(roll_rad) @ rotation_x(pitch_rad)
+
+
+def is_body_pose_within_limits(body_position_world, roll_deg, pitch_deg, yaw_deg):
+    """Return True if the body pose is inside configured conservative software limits."""
+    body_position_world = np.array(body_position_world, dtype=float)
+    z_offset = float(body_position_world[2])
+
+    return (
+        BODY_POSE_LIMITS["z_offset_min"] <= z_offset <= BODY_POSE_LIMITS["z_offset_max"]
+        and BODY_POSE_LIMITS["roll_deg_min"] <= float(roll_deg) <= BODY_POSE_LIMITS["roll_deg_max"]
+        and BODY_POSE_LIMITS["pitch_deg_min"] <= float(pitch_deg) <= BODY_POSE_LIMITS["pitch_deg_max"]
+        and BODY_POSE_LIMITS["yaw_deg_min"] <= float(yaw_deg) <= BODY_POSE_LIMITS["yaw_deg_max"]
+    )
+
+
+def validate_body_pose_or_raise(body_position_world, roll_deg, pitch_deg, yaw_deg):
+    """Raise ValueError with details when a pose is outside conservative software limits."""
+    if is_body_pose_within_limits(body_position_world, roll_deg, pitch_deg, yaw_deg):
+        return
+
+    body_position_world = np.array(body_position_world, dtype=float)
+    z_offset = float(body_position_world[2])
+    raise ValueError(
+        "Body pose outside BODY_POSE_LIMITS: "
+        f"z_offset={z_offset} allowed=[{BODY_POSE_LIMITS['z_offset_min']}, {BODY_POSE_LIMITS['z_offset_max']}], "
+        f"roll_deg={roll_deg} allowed=[{BODY_POSE_LIMITS['roll_deg_min']}, {BODY_POSE_LIMITS['roll_deg_max']}], "
+        f"pitch_deg={pitch_deg} allowed=[{BODY_POSE_LIMITS['pitch_deg_min']}, {BODY_POSE_LIMITS['pitch_deg_max']}], "
+        f"yaw_deg={yaw_deg} allowed=[{BODY_POSE_LIMITS['yaw_deg_min']}, {BODY_POSE_LIMITS['yaw_deg_max']}]"
+    )
 
 
 def foot_world_to_body(foot_world, body_position_world, roll_rad=0.0, pitch_rad=0.0, yaw_rad=0.0):

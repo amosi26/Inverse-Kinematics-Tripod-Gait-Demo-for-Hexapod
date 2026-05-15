@@ -61,6 +61,23 @@ LEG_MOUNT_YAWS_DEG_BODY = {
     "LB": -111.8,
 }
 
+# Conservative software body pose limits used before commanding body poses.
+# These are based on the empirical body-pose sweep diagnostic results.
+# They are intentionally stricter than discovered single-axis limits because
+# combined body poses can fail even when individual axes pass.
+# These are not final hardware-safe limits until CAD collision checks and
+# hardware testing are completed.
+BODY_POSE_LIMITS = {
+    "z_offset_min": -1.0,
+    "z_offset_max": 0.5,
+    "roll_deg_min": -8.0,
+    "roll_deg_max": 8.0,
+    "pitch_deg_min": -5.0,
+    "pitch_deg_max": 5.0,
+    "yaw_deg_min": -10.0,
+    "yaw_deg_max": 5.0,
+}
+
 # Default neutral foot target in each leg's local frame.
 # +X_leg points outward from the body along the leg mount yaw direction.
 # Z is negative because the foot sits below the body.
